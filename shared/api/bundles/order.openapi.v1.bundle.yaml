@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  title: OrderService API
+  version: 1.0.0
+  description: API для работы о заказами
+tags:
+  - name: Order
+paths:
+  /api/v1/order/{order_uuid}:
+    parameters:
+      - $ref: '#/components/parameters/order_uuid'
+    get:
+      summary: Get order data for a order uuid
+      operationId: GetOrderByUuid
+      tags:
+        - Order
+      responses:
+        '200':
+          description: Order information successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/order'
+        '404':
+          description: Order data for specified uuid not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+  /api/v1/orders/{order_uuid}/pay:
+    parameters:
+      - $ref: '#/components/parameters/order_uuid'
+    post:
+      summary: Pay order
+      operationId: PayOrder
+      tags:
+        - Order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/pay_order_request'
+      responses:
+        '200':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pay_order_response'
+        '404':
+          description: Order data for specified uuid not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+  /api/v1/orders/{order_uuid}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/order_uuid'
+    post:
+      summary: Cancel order
+      operationId: CancelOrder
+      tags:
+        - Order
+      responses:
+        '204':
+          description: Order canceled successfully
+        '404':
+          description: Order data for specified uuid not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+        '409':
+          description: Order data for specified uuid conflicted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/conflict_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+  /api/v1/orders/:
+    post:
+      summary: Create order
+      operationId: CreateOrder
+      tags:
+        - Order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_order_request'
+      responses:
+        '200':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/create_order_response'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+components:
+  parameters:
+    order_uuid:
+      name: order_uuid
+      in: path
+      required: true
+      description: UUID заказа
+      schema:
+        type: string
+        minLength: 36
+        maxLength: 36
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+  schemas:
+    generic_error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+        message:
+          type: string
+          description: Описание ошибки
+    order:
+      type: object
+      required:
+        - order_uuid
+        - user_uuid
+        - part_uuids
+        - total_price
+        - status
+      properties:
+        order_uuid:
+          type: string
+          description: Уникальный UUID заказа
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        user_uuid:
+          type: string
+          description: Уникальный UUID пользователя
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        part_uuids:
+          type: array
+          description: Список UUID деталей
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 36
+            maxLength: 36
+        total_price:
+          type: number
+          format: float
+          description: Общая цена заказа
+          example: 34242.34
+        transaction_uuid:
+          type: string
+          description: Уникальный UUID транзакции
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        payment_method:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: SBP
+        status:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: PAID
+    not_found_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 404
+        message:
+          type: string
+          description: Описание ошибки
+          example: Weather for city 'Unknown' not found
+    pay_order_request:
+      type: object
+      required:
+        - payment_method
+      properties:
+        payment_method:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: SBP
+    pay_order_response:
+      type: object
+      required:
+        - transaction_uuid
+      properties:
+        transaction_uuid:
+          type: string
+          description: Уникальный UUID транзакции
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+    conflict_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 409
+        message:
+          type: string
+          description: Описание ошибки
+          example: 'Bad Request: conflict with the current state of the target resource'
+    create_order_request:
+      type: object
+      required:
+        - user_uuid
+        - part_uuids
+      properties:
+        user_uuid:
+          type: string
+          description: Уникальный UUID пользователя
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        part_uuids:
+          type: array
+          description: Список UUID деталей
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 36
+            maxLength: 36
+    create_order_response:
+      type: object
+      required:
+        - order_uuid
+        - total_price
+      properties:
+        order_uuid:
+          type: string
+          description: Уникальный UUID заказа
+          minLength: 36
+          maxLength: 36
+          example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        total_price:
+          type: number
+          format: float
+          description: Общая цена заказа
+          example: 34242.34
+    bad_request_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 400
+        message:
+          type: string
+          description: Описание ошибки
+          example: 'Bad Request: Invalid parameter format'
+x-ogen:
+  target: ./shared/pkg/openapi/order/v1
+  package: order_v1
+  clean: true

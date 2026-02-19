@@ -1,0 +1,50 @@
+type: object
+required:
+  - order_uuid
+  - user_uuid
+  - part_uuids
+  - total_price
+  - status
+properties:
+  order_uuid:
+    type: string
+    description: Уникальный UUID заказа
+    minLength: 36
+    maxLength: 36
+    example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+  user_uuid:
+    type: string
+    description: Уникальный UUID пользователя
+    minLength: 36
+    maxLength: 36
+    example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+  part_uuids:
+    type: array
+    description: Список UUID деталей
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      minLength: 36
+      maxLength: 36
+  total_price:
+    type: number
+    format: float
+    description: Общая цена заказа
+    example: 34242.34
+  transaction_uuid:
+    type: string
+    description: Уникальный UUID транзакции
+    minLength: 36
+    maxLength: 36
+    example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+  payment_method:
+    type: string
+    minLength: 1
+    maxLength: 100
+    example: "SBP"
+  status: 
+    type: string
+    minLength: 1
+    maxLength: 100
+    example: "PAID"
