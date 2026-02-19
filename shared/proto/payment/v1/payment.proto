@@ -17,11 +17,13 @@ service PaymentService {
 }
 
 message PayOrderRequest {
-  string order_uuid = 1;
-  string user_uuid = 2;
-  PaymentMethod payment_method = 3;
+  int64 id = 1;
+  string order_uuid = 2;
+  string user_uuid = 3;
+  PaymentMethod payment_method = 4;
 }
 
 message PayOrderResponse {
-  string transaction_uuid = 1;
+  int64 id = 1;
+  string transaction_uuid = 2;
 }
