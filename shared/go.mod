@@ -1,11 +1,10 @@
-module mygo
+module golearning/shared
 
 go 1.25.4
 
 require (
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.2.0
-	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/ogen-go/ogen v1.19.0
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/metric v1.40.0
