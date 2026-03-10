@@ -1,88 +1,52 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/grpc/status"
 
-	paymentV1 "golearning/shared/pkg/proto/payment/v1"
+	paymentapi "golearning/payment/internal/api/payment/v1"
+	paymentrepository "golearning/payment/internal/repository/payment"
+	paymentservice "golearning/payment/internal/service/payment"
+	paymentv1 "golearning/shared/pkg/proto/payment/v1"
 )
 
 const grpcPort = 50052
 
-type paymentService struct {
-	paymentV1.UnimplementedPaymentServiceServer
-
-	mu sync.RWMutex
-}
-
-func (s *paymentService) PayOrder(_ context.Context, in *paymentV1.PayOrderRequest) (*paymentV1.PayOrderResponse, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	err := uuid.Validate(in.OrderUuid)
-	if err != nil {
-		return &paymentV1.PayOrderResponse{}, status.Error(codes.InvalidArgument, "Invalid order UUID")
-	}
-	err = uuid.Validate(in.UserUuid)
-	if err != nil {
-		return &paymentV1.PayOrderResponse{}, status.Error(codes.InvalidArgument, "Invalid user UUID")
-	}
-	if in.PaymentMethod == 0 {
-		return &paymentV1.PayOrderResponse{}, status.Error(codes.InvalidArgument, "Invalid payment method")
-	}
-
-	newTransactionUUID := uuid.New().String()
-	log.Printf("Оплата прошла успешно, transaction_uuid: %s\n", newTransactionUUID)
-	return &paymentV1.PayOrderResponse{
-		TransactionUuid: newTransactionUUID,
-	}, nil
-}
-
 func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
-		log.Printf("failed to listen: %v\n", err)
-		return
+		log.Fatalf("failed to listen: %v", err)
 	}
 	defer func() {
-		if cerr := lis.Close(); cerr != nil {
-			log.Printf("failed to close listener: %v\n", cerr)
+		if closeErr := listener.Close(); closeErr != nil {
+			log.Printf("failed to close listener: %v", closeErr)
 		}
 	}()
 
-	s := grpc.NewServer()
+	repository := paymentrepository.NewRepository()
+	service := paymentservice.NewService(repository)
+	api := paymentapi.NewAPI(service)
 
-	service := &paymentService{}
-
-	paymentV1.RegisterPaymentServiceServer(s, service)
-
-	reflection.Register(s)
+	grpcServer := grpc.NewServer()
+	paymentv1.RegisterPaymentServiceServer(grpcServer, api)
+	reflection.Register(grpcServer)
 
 	go func() {
-		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
-		err = s.Serve(lis)
-		if err != nil {
-			log.Printf("failed to serve: %v\n", err)
-			return
+		log.Printf("gRPC server listening on %d", grpcPort)
+		if serveErr := grpcServer.Serve(listener); serveErr != nil {
+			log.Printf("failed to serve: %v", serveErr)
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("🛑 Shutting down gRPC server...")
-	s.GracefulStop()
-	log.Println("✅ Server stopped")
+	grpcServer.GracefulStop()
 }

@@ -6,7 +6,7 @@ info:
 tags:
   - name: Order
 paths:
-  /api/v1/order/{order_uuid}:
+  /api/v1/orders/{order_uuid}:
     parameters:
       - $ref: '#/components/parameters/order_uuid'
     get:
